@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import math
 
+
 def line_length(line):
     """
     Calculates the Euclidean length of a line.
@@ -22,15 +23,15 @@ def calculate_angle(line):
         angle -= 180
     return angle
 
-
-def merge_close_lines_recursive(lines, min_distance, merge_angle_tolerance, vertical_leeway=1.5, horizontal_leeway=0.5):
+def merge_close_lines_recursive(lines, min_distance, merge_angle_tolerance, vertical_leeway=1.5, horizontal_leeway=1.5):
     """
     Recursively merges lines that are close and have similar angles.
     Handles horizontal and vertical lines with distinct merging criteria.
-    
+
     vertical_leeway: Multiplier for vertical tolerance in vertical lines.
     horizontal_leeway: Multiplier for horizontal tolerance in horizontal lines.
     """
+
     def weighted_average(p1, w1, p2, w2):
         """Computes a weighted average of two points."""
         return (p1 * w1 + p2 * w2) / (w1 + w2)
@@ -192,6 +193,7 @@ def draw_center_line_for_parallel_pairs(frame, parallel_lines):
             if min_top_x < max_bottom_x:
                 cv2.line(frame, (int(min_top_x), top_y), (int(max_bottom_x), bottom_y), (255, 0, 0), 3)
 
+
 def is_parallel(line1, line2, toward_tolerance, away_tolerance, distance_threshold):
     """
     Checks if two lines are parallel, with improved handling for horizontal and vertical lines.
@@ -222,8 +224,9 @@ def is_parallel(line1, line2, toward_tolerance, away_tolerance, distance_thresho
     return False
 
 
-def detect_and_classify_lines(frame, max_line_gap=85, toward_tolerance=65, away_tolerance=45, merge_angle_tolerance=65,
-                              distance_threshold=999999999, min_distance=250, min_line_length=195, min_overlap_ratio=0.8,
+def detect_and_classify_lines(frame, max_line_gap=85, toward_tolerance=75, away_tolerance=75, merge_angle_tolerance=65,
+                              distance_threshold=999999999, min_distance=250, min_line_length=150,
+                              min_overlap_ratio=0.8,
                               proximity_threshold=20):
     """
     Detects and classifies lines based on their color, parallelism, proximity, and length.
@@ -321,6 +324,7 @@ def detect_and_classify_lines(frame, max_line_gap=85, toward_tolerance=65, away_
 
     return frame, blue_mask, blue_mask_dilated, edges, enhanced_gray, parallel_blue_lines
 
+
 def calculate_distance_from_center(line, center_x, center_y):
     """
     Calculates the perpendicular distance of a line from the image center.
@@ -385,13 +389,14 @@ def crop_to_center_lines(frame, parallel_lines):
 
     return cropped_frame
 
+
 def draw_closest_center_parallel_lines(frame, parallel_lines):
     """
     Draws the two closest parallel lines to the center and their center line.
     """
     if len(parallel_lines) < 2:
         return  # Not enough lines to draw
-    
+
     # Calculate the image center
     height, width = frame.shape[:2]
     center_x, center_y = width / 2, height / 2
@@ -422,12 +427,14 @@ def detect_and_classify_lines_with_overlay(frame, **kwargs):
     Wrapper function for detecting, classifying, and overlaying lines based on the closest parallel lines.
     """
     # Perform the usual detection and classification
-    detected_frame, blue_mask, blue_mask_dilated, edges, enhanced_gray, parallel_blue_lines = detect_and_classify_lines(frame, **kwargs)
+    detected_frame, blue_mask, blue_mask_dilated, edges, enhanced_gray, parallel_blue_lines = detect_and_classify_lines(
+        frame, **kwargs)
 
     # Highlight only the closest parallel lines
     draw_closest_center_parallel_lines(detected_frame, parallel_blue_lines)
 
     return detected_frame, blue_mask, blue_mask_dilated, edges, enhanced_gray, parallel_blue_lines
+
 
 """"Above is the line detection logic, below is the websocket video stream stuff _________________________________________________________________________________________________________"""
 """DEBUGGING BELOW_________________________________________"""
@@ -444,11 +451,13 @@ while True:
         print("Error: Unable to read frame.")
         break
 
+    frame = frame[100: 700, 100: 700]
+    
     # Perform detection with the updated overlay logic
-    detected_frame, blue_mask, blue_mask_dilated, edges, enhanced_gray, parallel_blue_lines = detect_and_classify_lines_with_overlay(frame.copy())
+    detected_frame, blue_mask, blue_mask_dilated, edges, enhanced_gray, parallel_blue_lines = detect_and_classify_lines_with_overlay(
+        frame.copy())
 
-    # Crop to the region of interest
-    cropped_frame = crop_to_center_lines(frame, parallel_blue_lines)
+
 
     # Display the results
     cv2.imshow('Line Classification', detected_frame)
